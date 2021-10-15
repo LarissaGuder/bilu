@@ -26,3 +26,5 @@ export const getAuth = async () => {
       console.log(error);
     }
   };
+
+  
