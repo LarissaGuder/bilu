@@ -3,282 +3,139 @@ import { createConnection } from "typeorm";
 import { User } from "./entity/User";
 import express = require("express");
 import cors = require("cors");
-import cookieParser = require("cookie-parser");
-import querystring = require('querystring');
-import api from './services/api'
-import request = require('request'); // "Request" library
+import session = require('express-session')
+import passport = require('passport')
+import { Strategy } from 'passport-spotify'
+import consolidate = require('consolidate')
+
+
 require('dotenv').config()
-// createConnection().then(async connection => {
-const client_id = process.env.CLIENT_ID; // Your client id
-const client_secret = process.env.CLIENT_SECRET; // Your secret
-var redirect_uri = process.env.REDIRECT_URI; // Your redirect uri
-var stateKey = 'spotify_auth_state';
-console.log(process.env.CLIENT_ID)
-/**
-* Generates a random string containing numbers and letters
-* @param  {number} length The length of the string
-* @return {string} The generated string
-*/
-var generateRandomString = function (length) {
-    var text = '';
-    var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+createConnection().then(async connection => {
 
-    for (var i = 0; i < length; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
-};
+    var port = process.env.PORT;
+    var authCallbackPath = '/callback';
 
-var stateKey = 'spotify_auth_state';
+    // Passport session setup.
+    //   To support persistent login sessions, Passport needs to be able to
+    //   serialize users into and deserialize users out of the session. Typically,
+    //   this will be as simple as storing the user ID when serializing, and finding
+    //   the user by ID when deserializing. However, since this example does not
+    //   have a database of user records, the complete spotify profile is serialized
+    //   and deserialized.
+    passport.serializeUser(function (user, done) {
+        done(null, user);
+    });
 
-var app = express();
-app.use(express.static(__dirname + '/public'))
-    .use(cors())
-    .use(cookieParser());
+    passport.deserializeUser(function (obj, done) {
+        done(null, obj);
+    });
 
-    app.get('/callback', function (req, res) {
+    // Use the SpotifyStrategy within Passport.
+    //   Strategies in Passport require a `verify` function, which accept
+    //   credentials (in this case, an accessToken, refreshToken, expires_in
+    //   and spotify profile), and invoke a callback with a user object.
+    passport.use(
+        new Strategy(
+            {
+                clientID: process.env.CLIENT_ID,
+                clientSecret: process.env.CLIENT_SECRET,
+                callbackURL: 'http://localhost:' + port + authCallbackPath,
+            },
+            async function (accessToken, refreshToken, expires_in, profile, done) {
+                try {
+                    var user = await User.repository.findOne({ spotifyId: profile.id })
+                    if (!user) {
+                        user = new User()
+                        user.spotifyId = profile.id
+                        user.userName = profile.username
+                        await User.repository.save(user)
 
-        // your application requests refresh and access tokens
-        // after checking the state parameter
-    
-        var code = req.query.code || null;
-        var state = req.query.state || null;
-        var storedState = req.cookies ? req.cookies[stateKey] : null;
-    
-        if (state === null || state !== storedState) {
-            res.redirect('/#' +
-                querystring.stringify({
-                    error: 'state_mismatch'
-                }));
-        } else {
-            res.clearCookie(stateKey);
-            var authOptions = {
-                url: 'https://accounts.spotify.com/api/token',
-                form: {
-                    code: code,
-                    redirect_uri: redirect_uri,
-                    grant_type: 'authorization_code'
-                },
-                headers: {
-                    'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64'))
-                },
-                json: true
-            };
-    
-            request.post(authOptions, function (error, response, body) {
-                if (!error && response.statusCode === 200) {
-    
-                    var access_token = body.access_token,
-                        refresh_token = body.refresh_token;
-    
-                    var options = {
-                        url: 'https://api.spotify.com/v1/me',
-                        headers: { 'Authorization': 'Bearer ' + access_token },
-                        json: true
-                    };
-    
-                    // use the access token to access the Spotify Web API
-                    request.get(options, function (error, response, body) {
-                        console.log(body);
-                    });
-    
-                    // we can also pass the token to the browser to make requests from there
-                    res.redirect('/#' +
-                        querystring.stringify({
-                            access_token: access_token,
-                            refresh_token: refresh_token
-                        }));
-                } else {
-                    res.redirect('/#' +
-                        querystring.stringify({
-                            error: 'invalid_token'
-                        }));
+                    }
+                    return done(null, profile);
+                    
+
+                } catch (error) {
+                    return done(error, profile);
+
                 }
-            });
-        }
+            }
+        )
+    );
+
+    var app = express();
+
+    // configure Express
+    app.set('views', __dirname + '/views');
+    app.set('view engine', 'html');
+
+    app.use(
+        session({ secret: 'keyboard cat', resave: true, saveUninitialized: true })
+    );
+    // Initialize Passport!  Also use passport.session() middleware, to support
+    // persistent login sessions (recommended).
+    app.use(passport.initialize());
+    app.use(passport.session());
+
+    app.use(express.static(__dirname + '/public'));
+
+    app.engine('html', consolidate.nunjucks);
+
+    app.get('/', function (req, res) {
+        res.render('index.html', { user: req.user });
     });
-    
-app.get('/login', function (req, res) {
 
-    var state = generateRandomString(16);
-    res.cookie(stateKey, state);
-
-    // your application requests authorization
-    var scope = 'user-read-private user-read-email';
-    res.redirect('https://accounts.spotify.com/authorize?' +
-        querystring.stringify({
-            response_type: 'code',
-            client_id: client_id,
-            scope: scope,
-            redirect_uri: redirect_uri,
-            state: state
-        }));
-});
-
-
-app.get('/refresh_token', function (req, res) {
-
-    // requesting access token from refresh token
-    var refresh_token = req.query.refresh_token;
-    var authOptions = {
-        url: 'https://accounts.spotify.com/api/token',
-        headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64')) },
-        form: {
-            grant_type: 'refresh_token',
-            refresh_token: refresh_token
-        },
-        json: true
-    };
-
-    request.post(authOptions, function (error, response, body) {
-        if (!error && response.statusCode === 200) {
-            var access_token = body.access_token;
-            res.send({
-                'access_token': access_token
-            });
-        }
+    app.get('/account', ensureAuthenticated, function (req, res) {
+        res.render('account.html', { user: req.user });
     });
-});
 
+    app.get('/login', function (req, res) {
+        res.render('login.html', { user: req.user });
+    });
 
-//     /**
-//      * Generates a random string containing numbers and letters
-//      * @param  {number} length The length of the string
-//      * @return {string} The generated string
-//      */
-//     var generateRandomString = function (length: number) {
-//         var text = '';
-//         var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    // GET /auth/spotify
+    //   Use passport.authenticate() as route middleware to authenticate the
+    //   request. The first step in spotify authentication will involve redirecting
+    //   the user to spotify.com. After authorization, spotify will redirect the user
+    //   back to this application at /auth/spotify/callback
+    app.get(
+        '/auth/spotify',
+        passport.authenticate('spotify', {
+            scope: ['user-read-email', 'user-read-private'],
+        })
+    );
 
-//         for (var i = 0; i < length; i++) {
-//             text += possible.charAt(Math.floor(Math.random() * possible.length));
-//         }
-//         return text;
-//     };
-//     const app = express();
-//     const port = process.env.port
+    // GET /auth/spotify/callback
+    //   Use passport.authenticate() as route middleware to authenticate the
+    //   request. If authentication fails, the user will be redirected back to the
+    //   login page. Otherwise, the primary route function function will be called,
+    //   which, in this example, will redirect the user to the home page.
+    app.get(
+        authCallbackPath,
+        passport.authenticate('spotify', { failureRedirect: '/login' }),
+        function (req, res) {
+            res.redirect('/');
+        }
+    );
 
-//     app.use(express.static(__dirname + '/public'))
-//         .use(cors())
-//         .use(cookieParser());
+    app.get('/logout', function (req, res) {
+        req.logout();
+        res.redirect('/');
+    });
 
-//     app.get('/login', function (req, res) {
+    app.listen(port, function () {
+        console.log('App is listening on port ' + port);
+    });
 
-//         var state = generateRandomString(16);
-//         res.cookie(stateKey, state);
-
-//         // your application requests authorization
-//         var scope = 'user-read-private user-read-email';
-//         res.redirect('https://accounts.spotify.com/authorize?' +
-//             querystring.stringify({
-//                 response_type: 'code',
-//                 client_id: client_id,
-//                 scope: scope,
-//                 redirect_uri: redirect_uri,
-//                 state: state
-//             }));
-//     });
-
-//     app.get('/callback', function (req, res) {
-
-//         // your application requests refresh and access tokens
-//         // after checking the state parameter
-
-//         var code = req.query.code || null;
-//         var state = req.query.state || null;
-//         var storedState = req.cookies ? req.cookies[stateKey] : null;
-
-//         if (state === null || state !== storedState) {
-//             res.redirect('/#' +
-//                 querystring.stringify({
-//                     error: 'state_mismatch'
-//                 }));
-//         } else {
-//             res.clearCookie(stateKey);
-
-//             const data = {
-//                 code: code,
-//                 redirect_uri: redirect_uri,
-//                 grant_type: 'authorization_code'
-//             }
-
-//             const headers = {
-//                 headers: {
-//                     'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64'))
-//                 },
-//             }
-
-//         api.post('https://accounts.spotify.com/api/token', data, headers).then((response:any) => {
-//             if (response.status === 200) {
-
-//                 var access_token = response.data.access_token ,
-//                     refresh_token = body.refresh_token;
-
-//                 var options = {
-//                     url: 'https://api.spotify.com/v1/me',
-//                     headers: { 'Authorization': 'Bearer ' + access_token },
-//                     json: true
-//                 };
-
-//                 // use the access token to access the Spotify Web API
-//                 api.get(options, function (error, response, body) {
-//                     console.log(body);
-//                 });
-
-//                 // we can also pass the token to the browser to make requests from there
-//                 res.redirect('/#' +
-//                     querystring.stringify({
-//                         access_token: access_token,
-//                         refresh_token: refresh_token
-//                     }));
-//             } else {
-//                 res.redirect('/#' +
-//                     querystring.stringify({
-//                         error: 'invalid_token'
-//                     }));
-//             }
-//         });
-//     }
-//     });
-
-// app.get('/refresh_token', function (req, res) {
-
-//     // requesting access token from refresh token
-//     var refresh_token = req.query.refresh_token;
-//     var authOptions = {
-//         url: 'https://accounts.spotify.com/api/token',
-//         headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64')) },
-//         form: {
-//             grant_type: 'refresh_token',
-//             refresh_token: refresh_token
-//         },
-//         json: true
-//     };
-
-//     api.post('https://accounts.spotify.com/api/token', function (error: any, response: { statusCode: number; }, body: { access_token: any; }) {
-//         if (!error && response.statusCode === 200) {
-//             var access_token = body.access_token;
-//             res.send({
-//                 'access_token': access_token
-//             });
-//         }
-//     });
-// });
-
-// console.log("Inserting a new user into the database...");
-// const user = new User();
-// user.firstName = "Timber";
-// user.lastName = "Saw";
-// user.age = 25;
-// await connection.manager.save(user);
-// console.log("Saved a new user with id: " + user.id);
-
-// console.log("Loading users from the database...");
-// const users = await connection.manager.find(User);
-// console.log("Loaded users: ", users);
-
-// console.log("Here you can setup and run express/koa/any other framework.");
-app.listen(process.env.PORT || 3000, () => {
-    console.log(`Example app listening at http://localhost:${process.env.PORT || 3000}`)
-})
-// }).catch (error => console.log(error));
+    // Simple route middleware to ensure user is authenticated.
+    //   Use this route middleware on any resource that needs to be protected.  If
+    //   the request is authenticated (typically via a persistent login session),
+    //   the request will proceed. Otherwise, the user will be redirected to the
+    //   login page.
+    function ensureAuthenticated(req, res, next) {
+        if (req.isAuthenticated()) {
+            return next();
+        }
+        res.redirect('/login');
+    }
+    // })
+}).catch(error => console.log(error));

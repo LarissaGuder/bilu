@@ -1,4 +1,4 @@
-import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, getRepository } from "typeorm";
 
 @Entity()
 export class User {
@@ -10,9 +10,10 @@ export class User {
     userName: string;
 
     @Column()
-    accessToken: string;
+    spotifyId: string;
 
-    @Column()
-    refreshToken: number;
 
+    public static get repository() {
+        return getRepository(this)
+    }
 }
