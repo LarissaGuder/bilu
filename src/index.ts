@@ -7,6 +7,11 @@ import session = require('express-session')
 import passport = require('passport')
 import { Strategy } from 'passport-spotify'
 import consolidate = require('consolidate')
+import { Request, Response, NextFunction } from 'express'
+import { ensureAuthenticated } from './middleware/auth'
+import { recommendationService } from "./services/recommendationService";
+
+import axios, { AxiosInstance } from "axios";
 
 
 require('dotenv').config()
@@ -48,11 +53,18 @@ createConnection().then(async connection => {
                         user = new User()
                         user.spotifyId = profile.id
                         user.userName = profile.username
+                        user.acessToken = accessToken
+                        user.refreshToken = refreshToken
+                        await User.repository.save(user)
+
+                    } else {
+                        user.acessToken = accessToken
+                        user.refreshToken = refreshToken
                         await User.repository.save(user)
 
                     }
+
                     return done(null, profile);
-                    
 
                 } catch (error) {
                     return done(error, profile);
@@ -80,16 +92,83 @@ createConnection().then(async connection => {
 
     app.engine('html', consolidate.nunjucks);
 
-    app.get('/', function (req, res) {
+    app.get('/', function (req: Request, res: Response) {
         res.render('index.html', { user: req.user });
     });
 
-    app.get('/account', ensureAuthenticated, function (req, res) {
+    app.get('/account', ensureAuthenticated, function (req: Request, res: Response) {
+        const id = req.user as any
+        console.log(id.id)
         res.render('account.html', { user: req.user });
     });
 
-    app.get('/login', function (req, res) {
+    app.get('/login', function (req: Request, res: Response) {
         res.render('login.html', { user: req.user });
+    });
+
+    app.get('/shrekness', ensureAuthenticated, async function (req: Request, res: Response) {
+
+        const user = req.user as any
+        const userDb = await User.repository.findOne({ spotifyId: user.id })
+        let mediaValence = 0
+        const api = await axios({
+            method: 'get',
+            baseURL: 'https://api.spotify.com/v1/me/player/recently-played?limit=50',
+            headers: {
+                Authorization: `Bearer ${userDb.acessToken}`,
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(async function (response) {
+                const resp = response.data as any
+                let songs = ''
+                resp.items.forEach(element => {
+                    songs += element.track.id + `,`
+                });
+
+                console.log(songs.slice(0, -1))
+                const songsAPI = await axios({
+                    method: 'get',
+                    baseURL: `https://api.spotify.com/v1/audio-features?ids=${songs}`,
+                    headers: {
+                        Authorization: `Bearer ${userDb.acessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(function (response) {
+                        const resp = response.data as any
+                        let valenceMedia = 0
+                        resp.audio_features.forEach(element => {
+                            valenceMedia += parseFloat(element.valence)
+                        });
+                        console.log(resp.audio_features.length)
+                        // console.log(valenceMedia / resp.audio_features.length )
+                        mediaValence = valenceMedia / resp.audio_features.length
+                        // 
+                        let shrekao: string
+                        if (mediaValence == 0)
+                            shrekao = 'Não foi possível determinar sua shrekness'
+                        else if (mediaValence > 0 && mediaValence < 25)
+                            shrekao = 'Mais triste que o Shrek quando perde a Fiona'
+                        else if (mediaValence >= 25 && mediaValence < 50)
+                            shrekao = 'Mais triste que o Shrek quando perde o Pantano'
+                        else if (mediaValence >= 50 && mediaValence < 75)
+                            shrekao = 'Mais feliz que o Shrek quando dá o sapo inflável a Fiona'
+                        else
+                            shrekao = 'Mais feliz que o Shrek ao som de All Star'
+
+                        console.log(mediaValence)
+                        res.render('shrekness.html', { shrekao });
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+                // 
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+
     });
 
     // GET /auth/spotify
@@ -100,7 +179,7 @@ createConnection().then(async connection => {
     app.get(
         '/auth/spotify',
         passport.authenticate('spotify', {
-            scope: ['user-read-email', 'user-read-private'],
+            scope: ['user-read-email', 'user-read-private', 'user-top-read', 'user-read-recently-played'],
         })
     );
 
@@ -112,12 +191,12 @@ createConnection().then(async connection => {
     app.get(
         authCallbackPath,
         passport.authenticate('spotify', { failureRedirect: '/login' }),
-        function (req, res) {
+        function (req: Request, res: Response) {
             res.redirect('/');
         }
     );
 
-    app.get('/logout', function (req, res) {
+    app.get('/logout', function (req: Request, res: Response) {
         req.logout();
         res.redirect('/');
     });
@@ -126,16 +205,5 @@ createConnection().then(async connection => {
         console.log('App is listening on port ' + port);
     });
 
-    // Simple route middleware to ensure user is authenticated.
-    //   Use this route middleware on any resource that needs to be protected.  If
-    //   the request is authenticated (typically via a persistent login session),
-    //   the request will proceed. Otherwise, the user will be redirected to the
-    //   login page.
-    function ensureAuthenticated(req, res, next) {
-        if (req.isAuthenticated()) {
-            return next();
-        }
-        res.redirect('/login');
-    }
-    // })
+
 }).catch(error => console.log(error));

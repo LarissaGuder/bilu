@@ -12,6 +12,11 @@ export class User {
     @Column()
     spotifyId: string;
 
+    @Column()
+    acessToken: string;
+
+    @Column()
+    refreshToken: string;
 
     public static get repository() {
         return getRepository(this)
