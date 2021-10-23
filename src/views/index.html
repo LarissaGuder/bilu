@@ -2,10 +2,35 @@
 
 {% block content %}
 {% if not user %}
-	<h2>Welcome! Please log in.</h2>
-	<p><a href="/login">login</a></p>
+<!-- <h2>Welcome! Please log in.</h2>
+<p><a href="/login">login</a></p> -->
+<div class="bgimg-1">
+    <div class="caption">
+        <span class="border">Faça login para continuar!</span><br>
+        <span class="border"><a href="/login">login</a></span><br>
+
+    </div>
+</div>
 {% else %}
-	<h2>Hello, {{ user.username }}.</h2>
-	<p>Your email is {{ user.emails[0].value }}</p>
-{% endif %}
-{% endblock %}
+<a href="/logout">Log out</a>
+{% if shrekao.type == 0 %}
+<div class="bgimg-1"
+    style="background-image: url(https://files.nsctotal.com.br/styles/paragraph_image_style/s3/imagesrc/19467670.jpg?qr1o4vY_hiIfLOo.ByZ_VlTj5YwnA.zH&itok=FAVEdsPc)">
+    {% elif shrekao.type == 1 %}
+    <div class="bgimg-1"
+        style="background-image: url(https://i.ytimg.com/vi/pDwVHvTvZGk/maxresdefault.jpg)">
+        {% elif shrekao.type == 2 %}
+        <div class="bgimg-1"
+            style="background-image: url(https://i.ytimg.com/vi/psFzJv8g6jc/maxresdefault.jpg)">
+            {% elif shrekao.type == 3 %}
+            <div class="bgimg-1"
+                style="background-image: url(https://s2.glbimg.com/4XA_kCAH1gCp60Ue60g-tBSOpuA=/607x350/smart/e.glbimg.com/og/ed/f/original/2018/05/18/shrek.jpg)">
+                {% else %}
+                <div class="bgimg-1"
+                    style="background-image: url(https://s.yimg.com/uu/api/res/1.2/AswZkqvI6WCQ5k03h_PnDg--~B/aD0zMDA7dz02MDA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/es/tomatazos_56/632614b7918d69420b6b7c14d487c320)">
+                    {% endif %}
+                    <div class="caption">
+                        <span class="border"> {{shrekao.frase }}</span><br>
+                    </div>
+                </div>{% endif %}
+                {% endblock %}

@@ -44,7 +44,7 @@ createConnection().then(async connection => {
             {
                 clientID: process.env.CLIENT_ID,
                 clientSecret: process.env.CLIENT_SECRET,
-                callbackURL: 'http://localhost:' + port + authCallbackPath,
+                callbackURL: 'http://fed4-164-163-144-45.ngrok.io' + authCallbackPath,
             },
             async function (accessToken, refreshToken, expires_in, profile, done) {
                 try {
@@ -92,28 +92,24 @@ createConnection().then(async connection => {
 
     app.engine('html', consolidate.nunjucks);
 
-    app.get('/', function (req: Request, res: Response) {
-        res.render('index.html', { user: req.user });
-    });
+    // app.get('/', function (req: Request, res: Response) {
+    // res.render('index.html', { user: req.user });
+    // });
 
-    app.get('/account', ensureAuthenticated, function (req: Request, res: Response) {
-        const id = req.user as any
-        console.log(id.id)
-        res.render('account.html', { user: req.user });
-    });
+    // app.get('/account', ensureAuthenticated, function (req: Request, res: Response) {
+    //     res.render('account.html', { user: req.user });
+    // });
 
-    app.get('/login', function (req: Request, res: Response) {
-        res.render('login.html', { user: req.user });
-    });
 
-    app.get('/shrekness', ensureAuthenticated, async function (req: Request, res: Response) {
+
+    app.get('/', ensureAuthenticated, async function (req: Request, res: Response) {
 
         const user = req.user as any
         const userDb = await User.repository.findOne({ spotifyId: user.id })
         let mediaValence = 0
         const api = await axios({
             method: 'get',
-            baseURL: 'https://api.spotify.com/v1/me/player/recently-played?limit=50',
+            baseURL: 'https://api.spotify.com/v1/me/player/recently-played?limit=10',
             headers: {
                 Authorization: `Bearer ${userDb.acessToken}`,
                 'Content-Type': 'application/json'
@@ -145,20 +141,31 @@ createConnection().then(async connection => {
                         // console.log(valenceMedia / resp.audio_features.length )
                         mediaValence = valenceMedia / resp.audio_features.length
                         // 
-                        let shrekao: string
+                        let shrekao = {
+                            frase: '',
+                            type: 0
+                        }
                         if (mediaValence == 0)
-                            shrekao = 'Não foi possível determinar sua shrekness'
-                        else if (mediaValence > 0 && mediaValence < 25)
-                            shrekao = 'Mais triste que o Shrek quando perde a Fiona'
-                        else if (mediaValence >= 25 && mediaValence < 50)
-                            shrekao = 'Mais triste que o Shrek quando perde o Pantano'
-                        else if (mediaValence >= 50 && mediaValence < 75)
-                            shrekao = 'Mais feliz que o Shrek quando dá o sapo inflável a Fiona'
+                            shrekao.frase = 'Não foi possível determinar sua shrekness'//, shrekao.image = 'https://files.nsctotal.com.br/styles/paragraph_image_style/s3/imagesrc/19467670.jpg?qr1o4vY_hiIfLOo.ByZ_VlTj5YwnA.zH&itok=FAVEdsPc'
+
+                        else if (mediaValence > 0 && mediaValence < 0.25)
+                            shrekao.frase = 'Mais triste que o Shrek quando perde a Fiona', shrekao.type = 1 //shrekao.image = 'https://i.ytimg.com/vi/pDwVHvTvZGk/maxresdefault.jpg'
+                        else if (mediaValence >= 0.25 && mediaValence < 0.50)
+                            shrekao.frase = 'Mais triste que o Shrek quando perde o Pantano', shrekao.type = 2 //shrekao.image = 'https://i.ytimg.com/vi/psFzJv8g6jc/maxresdefault.jpg'
+                        else if (mediaValence >= 0.50 && mediaValence < 0.75)
+                            shrekao.frase = 'Mais feliz que o Shrek quando dá o sapo inflável a Fiona', shrekao.type = 3 //shrekao.image = 'https://s2.glbimg.com/4XA_kCAH1gCp60Ue60g-tBSOpuA=/607x350/smart/e.glbimg.com/og/ed/f/original/2018/05/18/shrek.jpg'
                         else
-                            shrekao = 'Mais feliz que o Shrek ao som de All Star'
+                            shrekao.frase = 'Mais feliz que o Shrek ao som de All Star', shrekao.type = 4 //shrekao.image = 'https://s.yimg.com/uu/api/res/1.2/AswZkqvI6WCQ5k03h_PnDg--~B/aD0zMDA7dz02MDA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/es/tomatazos_56/632614b7918d69420b6b7c14d487c320'
 
                         console.log(mediaValence)
-                        res.render('shrekness.html', { shrekao });
+                        // const formtHtml = `
+                        // <div class="bgimg-1" style="background-image: ${shrekao.image};">
+                        //     <div class="caption">
+                        //         <span class="border"> ${shrekao.frase }</span><br>
+                        //     </div>
+                        // </div>
+// `
+                        res.render('index.html', { shrekao, user: req.user });
                     })
                     .catch(function (error) {
                         console.log(error);
@@ -170,7 +177,9 @@ createConnection().then(async connection => {
             });
 
     });
-
+    app.get('/login', function (req: Request, res: Response) {
+        res.render('login.html', { user: req.user });
+    });
     // GET /auth/spotify
     //   Use passport.authenticate() as route middleware to authenticate the
     //   request. The first step in spotify authentication will involve redirecting

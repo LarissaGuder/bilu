@@ -2,22 +2,95 @@
 <html>
 
 <head>
-	<title>Passport-Spotify Example</title>
+    <html lang="en-US" ng-app="basicApp">
+
+	<title>Shrekness</title>
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+        }
+
+
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font: 400 15px/1.8 "Lato", sans-serif;
+            color: #777;
+        }
+
+        .bgimg-1,
+        .bgimg-2,
+        .bgimg-3 {
+            position: relative;
+            /* opacity: 0.85; */
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+
+        }
+
+        .bgimg-1 {
+            background-image: url("https://i.ytimg.com/vi/pDwVHvTvZGk/maxresdefault.jpg");
+            height: 100%;
+        }
+
+        .bgimg-1-home {
+            background-image: url("https://w.wallhaven.cc/full/zm/wallhaven-zmerry.jpg");
+            height: 100%;
+        }
+
+
+
+        .caption {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            text-align: center;
+            color: #000;
+        }
+
+        .caption span.border {
+            background-color: #111;
+            color: #fff;
+            padding: 18px;
+            font-size: 25px;
+            letter-spacing: 5px;
+        }
+
+        h3 {
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font: 20px "Lato", sans-serif;
+            color: #111;
+        }
+        a {
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font: 20px "Lato", sans-serif;
+            color: #111;
+            background: azure;
+            
+        }
+    </style>
 </head>
 
 <body>
 	{% if not user %}
-	<p>
-		<a href="/">Home</a> |
-		<a href="/login">Log In</a>
-	</p>
+	<div class="bgimg-1-home">
+        <div class="caption">
+            <span class="border">Com base no que você tem ouvido recentemente, <br> vamos lhe dizer qual o seu nível de Shrek.</span><br>
+            <p><a href="/auth/spotify">login</a></p><br>
+        </div>
+    </div>
 	{% else %}
-	<p>
-		<a href="/">Home</a> |
-		<a href="/account">Account</a> |
-		<a href="/shrekness">Shrekness</a> |
-		<a href="/logout">Log Out</a>
-	</p>
+	<!-- <p> -->
+		<!-- <a href="/">Home</a> | -->
+		<!-- <a href="/shrekness">Shrekness</a> | -->
+	<!-- </p> -->
 	{% endif %} {% block content %}{% endblock %}
 </body>
 
