@@ -109,76 +109,76 @@ createConnection().then(async connection => {
         const user = req.user as any
         const userDb = await User.repository.findOne({ spotifyId: user.id })
         let mediaValence = 0
-        const recentes = await recentesService.getRecentPlayed(userDb.acessToken)
-        console.log(recentes)
-//         const api = await axios({a
-//             method: 'get',
-//             baseURL: 'https://api.spotify.com/v1/me/player/recently-played',
-//             headers: {
-//                 Authorization: `Bearer ${userDb.acessToken}`,
-//                 'Content-Type': 'application/json'
-//             }
-//         })
-//             .then(async function (response) {
-//                 const resp = response.data as any
-//                 let songs = ''
-//                 resp.items.forEach(element => {
-//                     songs += element.track.id + `,`
-//                 });
+        // const recentes = await recentesService.getRecentPlayed(userDb.acessToken)
+        // console.log(recentes)
+        const api = await axios({
+            method: 'get',
+            baseURL: 'https://api.spotify.com/v1/me/player/recently-played',
+            headers: {
+                Authorization: `Bearer ${userDb.acessToken}`,
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(async function (response) {
+                const resp = response.data as any
+                let songs = ''
+                resp.items.forEach(element => {
+                    songs += element.track.id + `,`
+                });
 
-//                 console.log(songs.slice(0, -1))
-//                 const songsAPI = await axios({
-//                     method: 'get',
-//                     baseURL: `https://api.spotify.com/v1/audio-features?ids=${songs}`,
-//                     headers: {
-//                         Authorization: `Bearer ${userDb.acessToken}`,
-//                         'Content-Type': 'application/json'
-//                     }
-//                 })
-//                     .then(function (response) {
-//                         const resp = response.data as any
-//                         let valenceMedia = 0
-//                         resp.audio_features.forEach(element => {
-//                             valenceMedia += parseFloat(element.valence)
-//                         });
-//                         console.log(resp.audio_features.length)
-//                         // console.log(valenceMedia / resp.audio_features.length )
-//                         mediaValence = valenceMedia / resp.audio_features.length
-//                         // 
-//                         let shrekao = {
-//                             frase: '',
-//                             type: 0
-//                         }
-//                         if (mediaValence == 0)
-//                             shrekao.frase = 'Não foi possível determinar sua shrekness'//, shrekao.image = 'https://files.nsctotal.com.br/styles/paragraph_image_style/s3/imagesrc/19467670.jpg?qr1o4vY_hiIfLOo.ByZ_VlTj5YwnA.zH&itok=FAVEdsPc'
+                // console.log(songs.slice(0, -1))
+                const songsAPI = await axios({
+                    method: 'get',
+                    baseURL: `https://api.spotify.com/v1/audio-features?ids=${songs}`,
+                    headers: {
+                        Authorization: `Bearer ${userDb.acessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(function (response) {
+                        const resp = response.data as any
+                        let valenceMedia = 0
+                        resp.audio_features.forEach(element => {
+                            valenceMedia += parseFloat(element.valence)
+                        });
+                        console.log(resp.audio_features.length)
+                        // console.log(valenceMedia / resp.audio_features.length )
+                        mediaValence = valenceMedia / resp.audio_features.length
+                        // 
+                        let shrekao = {
+                            frase: '',
+                            type: 0
+                        }
+                        if (mediaValence == 0)
+                            shrekao.frase = 'Não foi possível determinar sua shrekness'//, shrekao.image = 'https://files.nsctotal.com.br/styles/paragraph_image_style/s3/imagesrc/19467670.jpg?qr1o4vY_hiIfLOo.ByZ_VlTj5YwnA.zH&itok=FAVEdsPc'
 
-//                         else if (mediaValence > 0 && mediaValence < 0.25)
-//                             shrekao.frase = 'Mais triste que o Shrek quando perde a Fiona', shrekao.type = 1 //shrekao.image = 'https://i.ytimg.com/vi/pDwVHvTvZGk/maxresdefault.jpg'
-//                         else if (mediaValence >= 0.25 && mediaValence < 0.50)
-//                             shrekao.frase = 'Mais triste que o Shrek quando perde o Pantano', shrekao.type = 2 //shrekao.image = 'https://i.ytimg.com/vi/psFzJv8g6jc/maxresdefault.jpg'
-//                         else if (mediaValence >= 0.50 && mediaValence < 0.75)
-//                             shrekao.frase = 'Mais feliz que o Shrek quando dá o sapo inflável a Fiona', shrekao.type = 3 //shrekao.image = 'https://s2.glbimg.com/4XA_kCAH1gCp60Ue60g-tBSOpuA=/607x350/smart/e.glbimg.com/og/ed/f/original/2018/05/18/shrek.jpg'
-//                         else
-//                             shrekao.frase = 'Mais feliz que o Shrek ao som de All Star', shrekao.type = 4 //shrekao.image = 'https://s.yimg.com/uu/api/res/1.2/AswZkqvI6WCQ5k03h_PnDg--~B/aD0zMDA7dz02MDA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/es/tomatazos_56/632614b7918d69420b6b7c14d487c320'
+                        else if (mediaValence > 0 && mediaValence < 0.25)
+                            shrekao.frase = 'Mais triste que o Shrek quando perde a Fiona', shrekao.type = 1 //shrekao.image = 'https://i.ytimg.com/vi/pDwVHvTvZGk/maxresdefault.jpg'
+                        else if (mediaValence >= 0.25 && mediaValence < 0.50)
+                            shrekao.frase = 'Mais triste que o Shrek quando perde o Pantano', shrekao.type = 2 //shrekao.image = 'https://i.ytimg.com/vi/psFzJv8g6jc/maxresdefault.jpg'
+                        else if (mediaValence >= 0.50 && mediaValence < 0.75)
+                            shrekao.frase = 'Mais feliz que o Shrek quando dá o sapo inflável a Fiona', shrekao.type = 3 //shrekao.image = 'https://s2.glbimg.com/4XA_kCAH1gCp60Ue60g-tBSOpuA=/607x350/smart/e.glbimg.com/og/ed/f/original/2018/05/18/shrek.jpg'
+                        else
+                            shrekao.frase = 'Mais feliz que o Shrek ao som de All Star', shrekao.type = 4 //shrekao.image = 'https://s.yimg.com/uu/api/res/1.2/AswZkqvI6WCQ5k03h_PnDg--~B/aD0zMDA7dz02MDA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/es/tomatazos_56/632614b7918d69420b6b7c14d487c320'
 
-//                         console.log(mediaValence)
-//                         // const formtHtml = `
-//                         // <div class="bgimg-1" style="background-image: ${shrekao.image};">
-//                         //     <div class="caption">
-//                         //         <span class="border"> ${shrekao.frase }</span><br>
-//                         //     </div>
-//                         // </div>
-// // `
-//                         res.render('index.html', { shrekao, user: req.user });
-//                     })
-//                     .catch(function (error) {
-//                         console.log(error);
-//                     });
-//                 // 
-//             })
-//             .catch(function (error) {
-//                 console.log(error);
-//             });
+                        // console.log(mediaValence)
+                        // const formtHtml = `
+                        // <div class="bgimg-1" style="background-image: ${shrekao.image};">
+                        //     <div class="caption">
+                        //         <span class="border"> ${shrekao.frase }</span><br>
+                        //     </div>
+                        // </div>
+// `
+                        res.render('index.html', { shrekao, user: req.user });
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+                // 
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
 
     });
     app.get('/login', function (req: Request, res: Response) {
