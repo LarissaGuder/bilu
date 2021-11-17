@@ -41,12 +41,15 @@ createConnection().then(async connection => {
     //   Strategies in Passport require a `verify` function, which accept
     //   credentials (in this case, an accessToken, refreshToken, expires_in
     //   and spotify profile), and invoke a callback with a user object.
+    const client = process.env.CLIENT_ID ? process.env.CLIENT_ID : ''
+    const secret = process.env.CLIENT_SECRET ? process.env.CLIENT_SECRET : ''
+    const callback = process.env.REDIRECT_URI ? process.env.REDIRECT_URI : ''
     passport.use(
         new Strategy(
-            {
-                clientID: process.env.CLIENT_ID,
-                clientSecret: process.env.CLIENT_SECRET,
-                callbackURL: process.env.REDIRECT_URI,
+            {   
+                clientID: client,
+                clientSecret: secret,
+                callbackURL: callback,
             },
             async function (accessToken, refreshToken, expires_in, profile, done) {
                 try {
@@ -111,6 +114,7 @@ createConnection().then(async connection => {
         let mediaValence = 0
         // const recentes = await recentesService.getRecentPlayed(userDb.acessToken)
         // console.log(recentes)
+        if(userDb){
         const api = await axios({
             method: 'get',
             baseURL: 'https://api.spotify.com/v1/me/player/recently-played',
@@ -169,17 +173,21 @@ createConnection().then(async connection => {
                         //     </div>
                         // </div>
 // `
+
                         res.render('index.html', { shrekao, user: req.user });
+                        
                     })
                     .catch(function (error) {
                         console.log(error);
                     });
-                // 
+                // }
             })
             .catch(function (error) {
                 console.log(error);
             });
 
+
+        }
     });
     app.get('/login', function (req: Request, res: Response) {
         res.render('login.html', { user: req.user });

@@ -1,8 +1,8 @@
-import { Router } from 'express';
-import { getAuth } from '../services/auth';
+// import { Router } from 'express';
+// import { getAuth } from '../services/';
 
-const routes = Router();
+// const routes = Router();
 
-routes.get('/test', getAuth);
+// routes.get('/test', getAuth);
 
-export default routes;
+// export default routes;

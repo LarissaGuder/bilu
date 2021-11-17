@@ -2,6 +2,7 @@
    "name": "bilu",
    "version": "0.0.1",
    "description": "Banana",
+   "main": "./build/server.js",
    "devDependencies": {
       "@types/consolidate": "^0.14.1",
       "@types/cookie-parser": "^1.4.2",
@@ -36,6 +37,10 @@
       "typeorm": "0.2.38"
    },
    "scripts": {
-      "start": "tsnd src/index.ts"
+      "start": "node .",
+      "dev": "tsnd ./src/index.ts",
+      "build": "npm run clean && npm run build-ts",
+      "build-ts": "tsc",
+      "clean": "rimraf build"
    }
 }
