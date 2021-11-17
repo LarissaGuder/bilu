@@ -39,7 +39,7 @@
    "scripts": {
       "start": "node .",
       "dev": "tsnd ./src/index.ts",
-      "build": "npm run clean && npm run build-ts",
+      "build": "npm run clean && npm run build-ts && cp -R ./views ./build",
       "build-ts": "tsc",
       "clean": "rimraf build"
    }
