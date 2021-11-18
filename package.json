@@ -40,6 +40,7 @@
    "scripts": {
       "start": "node .",
       "dev": "tsnd ./src/index.ts",
+      "build:local": "npm run clean && npm run build-ts && xcopy \"./src/views\" \"./build/views/\" /S",
       "build": "npm run clean && npm run build-ts && cp -R ./src/views ./build",
       "build-ts": "tsc",
       "clean": "rimraf build"
